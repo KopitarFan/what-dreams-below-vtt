@@ -114,6 +114,7 @@ export type Player = {
   id: string;
   name: string;
   character: Character | null;
+  characterStatus: 'draft' | 'final';
   tokenUrl: string | null;
   x: number;
   y: number;

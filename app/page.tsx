@@ -721,7 +721,10 @@ export default function Home() {
       />
     );
   const player = campaign.players.find((p) => p.id === session.playerId);
-  if (session.role === 'player' && !player?.character)
+  if (
+    session.role === 'player' &&
+    (!player?.character || player.characterStatus !== 'final')
+  )
     return (
       <CharacterBuilder
         session={session}
@@ -4354,9 +4357,23 @@ function CharacterBuilder({
   onLeave: () => void;
 }) {
   const [step, setStep] = useState(1);
-  const [c, setC] = useState(blankCharacter);
-  const [busy, setBusy] = useState(false);
+  const existingDraft = campaign.players.find(
+    (player) => player.id === session.playerId,
+  )?.character;
+  const [c, setC] = useState<Character>(() =>
+    existingDraft
+      ? {
+          ...existingDraft,
+          backstory: existingDraft.backstory || emptyBackstory,
+        }
+      : blankCharacter,
+  );
+  const [busy, setBusy] = useState<'draft' | 'finish' | null>(null);
   const [error, setError] = useState('');
+  const [savedVersion, setSavedVersion] = useState(
+    existingDraft ? JSON.stringify(existingDraft) : '',
+  );
+  const draftSaved = savedVersion === JSON.stringify(c);
   const stats = [
     'str',
     'con',
@@ -4379,8 +4396,30 @@ function CharacterBuilder({
     next.luck = rollDice(3) * 5;
     setC(derived(next));
   }
+  function update(next: Character) {
+    setC(next);
+  }
+  async function saveDraft() {
+    setBusy('draft');
+    setError('');
+    try {
+      onAccept(
+        await api({
+          action: 'saveCharacterDraft',
+          token: session.token,
+          campaignId: campaign.id,
+          character: c,
+        }),
+      );
+      setSavedVersion(JSON.stringify(c));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save draft.');
+    } finally {
+      setBusy(null);
+    }
+  }
   async function finish() {
-    setBusy(true);
+    setBusy('finish');
     setError('');
     try {
       onAccept(
@@ -4396,7 +4435,7 @@ function CharacterBuilder({
         err instanceof Error ? err.message : 'Could not save investigator.',
       );
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
   return (
@@ -4420,6 +4459,9 @@ function CharacterBuilder({
             Build someone with a reason to keep looking after the first
             impossible answer.
           </p>
+          <small className="required-key">
+            <i>*</i> Required before entering the table
+          </small>
         </div>
         <RulesReference age={c.age} />
         <div className="stepper four-steps">
@@ -4442,19 +4484,25 @@ function CharacterBuilder({
           <div className="character-form">
             <div className="form-grid">
               <label>
-                Investigator name
+                <span className="field-label">
+                  Investigator name <i>*</i>
+                </span>
                 <input
                   autoFocus
+                  required
                   value={c.name}
-                  onChange={(e) => setC({ ...c, name: e.target.value })}
+                  onChange={(e) => update({ ...c, name: e.target.value })}
                   placeholder="Evelyn Shaw"
                 />
               </label>
               <label>
-                Occupation
+                <span className="field-label">
+                  Occupation <i>*</i>
+                </span>
                 <input
+                  required
                   value={c.occupation}
-                  onChange={(e) => setC({ ...c, occupation: e.target.value })}
+                  onChange={(e) => update({ ...c, occupation: e.target.value })}
                   placeholder="Investigative journalist"
                 />
               </label>
@@ -4586,10 +4634,13 @@ function CharacterBuilder({
               </label>
             ))}
             <label>
-              Sanity anchor / key connection
+              <span className="field-label">
+                Sanity anchor / key connection <i>*</i>
+              </span>
               <textarea
+                required
                 value={c.anchor}
-                onChange={(e) => setC({ ...c, anchor: e.target.value })}
+                onChange={(e) => update({ ...c, anchor: e.target.value })}
                 placeholder="A person, place, or principle that keeps you grounded…"
               />
             </label>
@@ -4616,18 +4667,41 @@ function CharacterBuilder({
           <button disabled={step === 1} onClick={() => setStep(step - 1)}>
             Back
           </button>
-          {step < 4 ? (
-            <Button
-              onClick={() => setStep(step + 1)}
-              disabled={step === 1 && (!c.name || !c.occupation)}
+          <div className="character-save-actions">
+            <span aria-live="polite">
+              {draftSaved ? 'Draft saved to your account' : 'Unsaved changes'}
+            </span>
+            <button
+              type="button"
+              className="save-draft"
+              onClick={saveDraft}
+              disabled={Boolean(busy)}
             >
-              Continue
-            </Button>
-          ) : (
-            <Button onClick={finish} disabled={busy || !c.anchor}>
-              {busy ? 'Filing dossier…' : 'Enter the table'}
-            </Button>
-          )}
+              <Save /> {busy === 'draft' ? 'Saving…' : 'Save draft'}
+            </button>
+            {step < 4 ? (
+              <Button
+                onClick={() => setStep(step + 1)}
+                disabled={
+                  step === 1 && (!c.name.trim() || !c.occupation.trim())
+                }
+              >
+                Continue
+              </Button>
+            ) : (
+              <Button
+                onClick={finish}
+                disabled={
+                  Boolean(busy) ||
+                  !c.name.trim() ||
+                  !c.occupation.trim() ||
+                  !c.anchor.trim()
+                }
+              >
+                {busy === 'finish' ? 'Filing dossier…' : 'Enter the table'}
+              </Button>
+            )}
+          </div>
         </div>
       </section>
     </main>

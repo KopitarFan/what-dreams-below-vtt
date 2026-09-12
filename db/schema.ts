@@ -83,6 +83,7 @@ export const players = sqliteTable(
     playerToken: text('player_token').notNull().unique(),
     accountId: text('account_id').references(() => accounts.id),
     characterJson: text('character_json'),
+    characterStatus: text('character_status').notNull().default('final'),
     notesMarkdown: text('notes_markdown').notNull().default(''),
     tokenKey: text('token_key'),
     x: integer('x').notNull().default(45),

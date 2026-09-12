@@ -1264,6 +1264,25 @@ button {
   color: #5d6259;
   font: 11px Georgia;
 }
+.required-key {
+  display: block;
+  margin-top: 10px;
+  color: #685d43;
+  font: 8px Arial;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.required-key i,
+.field-label i {
+  color: #8f3028;
+  font-style: normal;
+  font-weight: 800;
+}
+.field-label {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
 .stepper {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1412,6 +1431,32 @@ button {
   background: transparent;
   color: #5d6259;
   font-size: 9px;
+}
+.character-save-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-left: auto;
+}
+.character-save-actions > span {
+  color: #686353;
+  font: italic 9px Georgia;
+}
+.character-save-actions .save-draft {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #6f725f;
+  background: transparent;
+  color: #303a31;
+  padding: 9px 12px;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+.character-save-actions .save-draft svg {
+  width: 14px;
+  height: 14px;
 }
 .character-actions .group\/button {
   min-width: 120px;

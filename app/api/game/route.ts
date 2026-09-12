@@ -408,6 +408,7 @@ async function dashboard(accountId: string) {
       status: campaigns.status,
       sessionNumber: campaigns.sessionNumber,
       characterJson: players.characterJson,
+      characterStatus: players.characterStatus,
     })
     .from(players)
     .innerJoin(campaigns, eq(players.campaignId, campaigns.id))
@@ -434,9 +435,10 @@ async function dashboard(accountId: string) {
       sessionNumber: p.sessionNumber,
       role: 'player' as const,
       playerId: p.playerId,
-      characterName: p.characterJson
-        ? (JSON.parse(p.characterJson) as Character).name
-        : null,
+      characterName:
+        p.characterJson && p.characterStatus === 'final'
+          ? (JSON.parse(p.characterJson) as Character).name
+          : null,
     })),
   ];
 }
@@ -607,7 +609,13 @@ async function snapshot(
     players: memberRows.map((p) => ({
       id: p.id,
       name: p.name,
-      character: p.characterJson ? JSON.parse(p.characterJson) : null,
+      character:
+        p.characterJson &&
+        (p.characterStatus === 'final' || p.id === viewerPlayerId)
+          ? JSON.parse(p.characterJson)
+          : null,
+      characterStatus:
+        p.characterStatus === 'draft' ? ('draft' as const) : ('final' as const),
       tokenUrl: p.tokenKey
         ? `/api/token?playerId=${encodeURIComponent(p.id)}`
         : null,
@@ -1228,14 +1236,9 @@ export async function POST(request: NextRequest) {
       name: name || account.displayName,
       playerToken,
       accountId: account.id,
+      characterStatus: 'draft',
       joinedAt: Date.now(),
     });
-    await log(
-      campaign.id,
-      name || account.displayName,
-      'join',
-      `${name || account.displayName} joined the campaign.`,
-    );
     const session: Session = {
       role: 'player',
       token: '',
@@ -1280,16 +1283,20 @@ export async function POST(request: NextRequest) {
   const campaignId = identity.campaignId;
   await ensureKeeperTables();
   await ensureIntegrationTables();
-  if (action === 'saveCharacter') {
+  if (action === 'saveCharacter' || action === 'saveCharacterDraft') {
     if (identity.role !== 'player' || !identity.playerId)
       return error('Only players create investigators.', 403);
     const c = body.character as Character;
+    const isDraft = action === 'saveCharacterDraft';
     if (
-      !c ||
-      clean(c.name, 60).length < 2 ||
-      clean(c.occupation, 60).length < 2
+      (!isDraft && !c) ||
+      (!isDraft &&
+        (clean(c.name, 60).length < 2 ||
+          clean(c.occupation, 60).length < 2 ||
+          clean(c.anchor, 600).length < 2))
     )
-      return error('Name and occupation are required.');
+      return error('Name, occupation, and sanity anchor are required.');
+    if (!c) return error('Character data is required.');
     const skills = Object.fromEntries(
       Object.entries(c.skills || {})
         .slice(0, 80)
@@ -1406,22 +1413,30 @@ export async function POST(request: NextRequest) {
         : undefined,
     };
     const existingPlayer = await db
-      .select({ characterJson: players.characterJson })
+      .select({
+        characterJson: players.characterJson,
+        characterStatus: players.characterStatus,
+      })
       .from(players)
       .where(eq(players.id, identity.playerId))
       .get();
     await db
       .update(players)
-      .set({ characterJson: JSON.stringify(safe), onBoard: true })
+      .set({
+        characterJson: JSON.stringify(safe),
+        characterStatus: isDraft ? 'draft' : 'final',
+        onBoard: isDraft ? false : true,
+      })
       .where(eq(players.id, identity.playerId));
-    await log(
-      campaignId,
-      identity.displayName,
-      'character',
-      existingPlayer?.characterJson
-        ? `${safe.name}'s dossier was updated.`
-        : `${safe.name}, ${safe.occupation}, entered the investigation.`,
-    );
+    if (!isDraft)
+      await log(
+        campaignId,
+        identity.displayName,
+        'character',
+        existingPlayer?.characterStatus === 'final'
+          ? `${safe.name}'s dossier was updated.`
+          : `${safe.name}, ${safe.occupation}, entered the investigation.`,
+      );
     return NextResponse.json({
       campaign: await snapshot(campaignId, identity.playerId),
     });
