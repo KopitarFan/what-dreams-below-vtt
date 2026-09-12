@@ -1,0 +1,14 @@
+services:
+  vtt:
+    build:
+      context: .
+    image: what-dreams-below-vtt:local
+    ports:
+      - '${VTT_PORT:-3000}:3000'
+    volumes:
+      - vtt-data:/data
+    init: true
+    restart: unless-stopped
+
+volumes:
+  vtt-data:

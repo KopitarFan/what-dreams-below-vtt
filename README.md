@@ -16,7 +16,7 @@ A real-time, web-based investigative-horror virtual tabletop built with TypeScri
 
 ## Local development
 
-Requirements: Node.js 22.13 or newer and a Cloudflare account for remote resources.
+Requirements: Node.js 22.18 or newer and a Cloudflare account for remote resources.
 
 ```bash
 npm install
@@ -34,6 +34,44 @@ Build the production Worker with:
 ```bash
 npm run build
 ```
+
+## Run with Docker
+
+Requirements: Docker Engine 24 or newer with Docker Compose.
+
+```bash
+docker compose up --build
+```
+
+Open [http://localhost:3000](http://localhost:3000). The container applies the
+local D1 migrations before starting and stores accounts, campaigns, uploaded
+media, and Durable Object state in the `vtt-data` Docker volume. Restarting or
+rebuilding the container preserves that data.
+
+To run in the background and follow its logs:
+
+```bash
+npm run docker:up
+npm run docker:logs
+```
+
+Stop the app without deleting its data:
+
+```bash
+npm run docker:down
+```
+
+To deliberately erase all containerized VTT data and start fresh:
+
+```bash
+npm run docker:reset
+```
+
+Set `VTT_PORT` to use a different host port, for example
+`VTT_PORT=8080 docker compose up`. Set `PORT` inside a custom container
+deployment to change the listening port. The supplied Compose configuration is
+intended for local or private self-hosting; put a TLS reverse proxy in front of
+it before exposing it to the public internet.
 
 For your own Cloudflare deployment, copy `wrangler.example.jsonc` to an ignored `wrangler.production.jsonc`, create the named D1 and R2 resources, and replace the example D1 identifier. Production credentials and campaign data must remain outside source control.
 

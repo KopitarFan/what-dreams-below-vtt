@@ -18,9 +18,33 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 22.13.0
+          node-version: 22.18.0
           cache: npm
       - name: Install exact dependencies
         run: npm ci
       - name: Run the full quality gate
         run: npm run check
+
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+      - name: Build container image
+        run: docker build --tag what-dreams-below-vtt:test .
+      - name: Start container
+        run: docker run --detach --name vtt-test --publish 3000:3000 what-dreams-below-vtt:test
+      - name: Verify container health
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3000/ >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs vtt-test
+          exit 1
+      - name: Stop container
+        if: always()
+        run: docker rm --force vtt-test || true

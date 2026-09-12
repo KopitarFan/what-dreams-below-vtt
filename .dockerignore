@@ -1,0 +1,17 @@
+.git
+.github
+.next
+.vinext
+.wrangler
+dist
+node_modules
+coverage
+.env*
+*.log
+*.pdf
+*.docx
+tmp
+work
+outputs
+wrangler.production.jsonc
+
