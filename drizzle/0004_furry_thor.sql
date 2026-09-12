@@ -1,0 +1,1 @@
+ALTER TABLE `players` ADD `notes_markdown` text DEFAULT '' NOT NULL;

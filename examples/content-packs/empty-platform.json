@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "1.0",
+  "title": "The Empty Platform",
+  "source": "Codex example",
+  "summary": "A compact noir-Mythos encounter package for testing the staging API.",
+  "scenes": [
+    {
+      "title": "The Empty Platform",
+      "chapter": "Chapter 1",
+      "description": "Rain needles an abandoned Pacific Electric platform. A lit carriage waits where no track remains.",
+      "objective": "Discover who summoned the impossible car.",
+      "clues": [
+        "Every timetable lists a different year.",
+        "A conductor's punch matches a scar on an investigator's hand."
+      ],
+      "keeperNotes": "Reveal the second clue after a successful Spot Hidden check."
+    }
+  ],
+  "cast": [
+    {
+      "name": "The Sleepless Conductor",
+      "kind": "mob",
+      "description": "A uniform filled with wet night air and the smell of hot copper.",
+      "motivation": "Collect the fare the investigators already owe.",
+      "hook": "It knows each investigator's childhood nickname.",
+      "hidden": true,
+      "hp": 13,
+      "stats": {
+        "str": 65,
+        "con": 70,
+        "siz": 55,
+        "dex": 60,
+        "int": 45,
+        "pow": 75,
+        "fighting": 50,
+        "damage": "1D6+1D4",
+        "armor": "1",
+        "sanityLoss": "1/1D6"
+      }
+    }
+  ],
+  "handouts": [
+    {
+      "title": "Tomorrow's Timetable",
+      "body": "PACIFIC ELECTRIC — LAST CAR 12:17 AM — PASSENGERS MUST PRESENT MEMORIES WITH FARE",
+      "revealed": false
+    }
+  ],
+  "encounters": [
+    {
+      "title": "Fare Due",
+      "hook": "The carriage doors close without being touched.",
+      "opposition": "The Sleepless Conductor",
+      "clue": "Ticket numbers correspond to sealed LAPD evidence boxes.",
+      "complication": "The train begins moving through places erased from city maps.",
+      "stakes": "A passenger loses a treasured memory at each stop.",
+      "difficulty": "Hard",
+      "sanityLoss": "1/1D6"
+    }
+  ],
+  "metadata": {
+    "tone": "hardboiled noir and dreamlike cosmic horror",
+    "setting": "Los Angeles, 1926"
+  }
+}
